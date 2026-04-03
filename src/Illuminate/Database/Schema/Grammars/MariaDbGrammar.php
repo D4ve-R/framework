@@ -7,6 +7,22 @@ use Illuminate\Support\Fluent;
 
 class MariaDbGrammar extends MySqlGrammar
 {
+    /**
+     * Compile a vector index key command.
+     *
+     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
+     * @param  \Illuminate\Support\Fluent  $command
+     * @return string
+     */
+    public function compileVectorIndex(Blueprint $blueprint, Fluent $command)
+    {
+        return sprintf('alter table %s add vector index %s (%s)',
+            $this->wrapTable($blueprint),
+            $this->wrap($command->index),
+            $this->columnize($command->columns)
+        );
+    }
+
     /** @inheritDoc */
     public function compileRenameColumn(Blueprint $blueprint, Fluent $command)
     {
@@ -30,6 +46,19 @@ class MariaDbGrammar extends MySqlGrammar
         }
 
         return 'uuid';
+    }
+
+    /**
+     * Create the column definition for a vector type.
+     *
+     * @param  \Illuminate\Support\Fluent  $column
+     * @return string
+     */
+    protected function typeVector(Fluent $column)
+    {
+        return isset($column->dimensions) && $column->dimensions !== ''
+            ? "VECTOR({$column->dimensions})"
+            : 'VECTOR';
     }
 
     /**

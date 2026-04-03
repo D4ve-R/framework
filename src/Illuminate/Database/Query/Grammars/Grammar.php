@@ -1667,4 +1667,17 @@ class Grammar extends BaseGrammar
     {
         return $this->bitwiseOperators;
     }
+
+    /**
+     * Compile a vector distance expression.
+     *
+     * @param  string  $column
+     * @return string
+     *
+     * @throws \RuntimeException
+     */
+    public function compileVectorDistanceExpression($column)
+    {
+        throw new RuntimeException('This database driver does not support vector distance queries.');
+    }
 }
