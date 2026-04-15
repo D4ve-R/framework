@@ -514,9 +514,11 @@ class Builder implements BuilderContract
             'select',
         );
 
-        $as = $this->getGrammar()->wrap($as ?? $column.'_distance');
+        $grammar = $this->getGrammar();
 
-        $distance = $this->getGrammar()->compileVectorDistanceExpression($this->getGrammar()->wrap($column));
+        $as = $grammar->wrap($as ?? $column.'_distance');
+
+        $distance = $grammar->compileVectorDistanceExpression($grammar->wrap($column));
 
         return $this->addSelect(
             new Expression("({$distance}) as {$as}")
@@ -1251,7 +1253,9 @@ class Builder implements BuilderContract
             $vector = Str::of($vector)->toEmbeddings(cache: true);
         }
 
-        $distance = $this->getGrammar()->compileVectorDistanceExpression($this->getGrammar()->wrap($column));
+        $grammar = $this->getGrammar();
+
+        $distance = $grammar->compileVectorDistanceExpression($grammar->wrap($column));
 
         return $this->whereRaw(
             "{$distance} <= ?",
@@ -3054,7 +3058,9 @@ class Builder implements BuilderContract
             $this->unions ? 'unionOrder' : 'order'
         );
 
-        $distance = $this->getGrammar()->compileVectorDistanceExpression($this->getGrammar()->wrap($column));
+        $grammar = $this->getGrammar();
+
+        $distance = $grammar->compileVectorDistanceExpression($grammar->wrap($column));
 
         $this->{$this->unions ? 'unionOrders' : 'orders'}[] = [
             'column' => new Expression("({$distance})"),
