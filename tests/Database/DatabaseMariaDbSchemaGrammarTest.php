@@ -417,6 +417,67 @@ class DatabaseMariaDbSchemaGrammarTest extends TestCase
         $this->assertSame('alter table `geo` add spatial index `geo_coordinates_spatialindex`(`coordinates`)', $statements[1]);
     }
 
+
+    public function testAddingVector()
+    {
+        $blueprint = new Blueprint($this->getConnection(), 'embeddings');
+        $blueprint->vector('embedding', 384);
+        $statements = $blueprint->toSql();
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `embeddings` add `embedding` VECTOR(384) not null', $statements[0]);
+    }
+
+    public function testAddingVectorWithoutDimensionsThrowsException()
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('MariaDB requires the vector dimensions to be specified.');
+
+        $blueprint = new Blueprint($this->getConnection(), 'embeddings');
+        $blueprint->vector('embedding');
+        $blueprint->toSql();
+    }
+
+    public function testAddingVectorIndex()
+    {
+        $blueprint = new Blueprint($this->getConnection(), 'posts');
+        $blueprint->vectorIndex('embeddings');
+        $statements = $blueprint->toSql();
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `posts` add vector index `posts_embeddings_vectorindex` (`embeddings`)', $statements[0]);
+    }
+
+    public function testAddingVectorIndexWithName()
+    {
+        $blueprint = new Blueprint($this->getConnection(), 'posts');
+        $blueprint->vectorIndex('embeddings', 'my_vector_index');
+        $statements = $blueprint->toSql();
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `posts` add vector index `my_vector_index` (`embeddings`)', $statements[0]);
+    }
+
+    public function testAddingFluentVectorIndex()
+    {
+        $blueprint = new Blueprint($this->getConnection(), 'posts');
+        $blueprint->vector('embeddings', 1536)->vectorIndex();
+        $statements = $blueprint->toSql();
+
+        $this->assertCount(2, $statements);
+        $this->assertSame('alter table `posts` add vector index `posts_embeddings_vectorindex` (`embeddings`)', $statements[1]);
+    }
+
+    public function testAddingFluentIndexOnVectorColumn()
+    {
+        $blueprint = new Blueprint($this->getConnection(), 'posts');
+        $blueprint->vector('embeddings', 1536)->index();
+        $statements = $blueprint->toSql();
+
+        $this->assertCount(2, $statements);
+        $this->assertSame('alter table `posts` add vector index `posts_embeddings_vectorindex` (`embeddings`)', $statements[1]);
+    }
+
     public function testAddingRawIndex()
     {
         $blueprint = new Blueprint($this->getConnection(), 'users');

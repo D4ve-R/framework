@@ -16,6 +16,7 @@ use Illuminate\Database\Concerns\ExplainsQueries;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\MariaDbConnection;
 use Illuminate\Database\PostgresConnection;
 use Illuminate\Database\Query\Grammars\Grammar;
 use Illuminate\Database\Query\Processors\Processor;
@@ -513,10 +514,14 @@ class Builder implements BuilderContract
             'select',
         );
 
-        $as = $this->getGrammar()->wrap($as ?? $column.'_distance');
+        $grammar = $this->getGrammar();
+
+        $as = $grammar->wrap($as ?? $column.'_distance');
+
+        $distance = $grammar->compileVectorDistanceExpression($grammar->wrap($column));
 
         return $this->addSelect(
-            new Expression("({$this->getGrammar()->wrap($column)} <=> ?) as {$as}")
+            new Expression("({$distance}) as {$as}")
         );
     }
 
@@ -1248,8 +1253,12 @@ class Builder implements BuilderContract
             $vector = Str::of($vector)->toEmbeddings(cache: true);
         }
 
+        $grammar = $this->getGrammar();
+
+        $distance = $grammar->compileVectorDistanceExpression($grammar->wrap($column));
+
         return $this->whereRaw(
-            "({$this->getGrammar()->wrap($column)} <=> ?) <= ?",
+            "{$distance} <= ?",
             [
                 json_encode(
                     $vector instanceof Arrayable
@@ -3049,8 +3058,12 @@ class Builder implements BuilderContract
             $this->unions ? 'unionOrder' : 'order'
         );
 
+        $grammar = $this->getGrammar();
+
+        $distance = $grammar->compileVectorDistanceExpression($grammar->wrap($column));
+
         $this->{$this->unions ? 'unionOrders' : 'orders'}[] = [
-            'column' => new Expression("({$this->getGrammar()->wrap($column)} <=> ?)"),
+            'column' => new Expression("({$distance})"),
             'direction' => 'asc',
         ];
 
@@ -4764,8 +4777,8 @@ class Builder implements BuilderContract
      */
     protected function ensureConnectionSupportsVectors()
     {
-        if (! $this->connection instanceof PostgresConnection) {
-            throw new RuntimeException('Vector distance queries are only supported by Postgres.');
+        if (! $this->connection instanceof PostgresConnection && ! $this->connection instanceof MariaDbConnection) {
+            throw new RuntimeException('Vector distance queries are only supported by Postgres and MariaDB.');
         }
     }
 
