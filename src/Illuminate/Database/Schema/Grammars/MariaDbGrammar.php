@@ -4,6 +4,7 @@ namespace Illuminate\Database\Schema\Grammars;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Fluent;
+use RuntimeException;
 
 class MariaDbGrammar extends MySqlGrammar
 {
@@ -53,12 +54,16 @@ class MariaDbGrammar extends MySqlGrammar
      *
      * @param  \Illuminate\Support\Fluent  $column
      * @return string
+     *
+     * @throws \RuntimeException
      */
     protected function typeVector(Fluent $column)
     {
-        return isset($column->dimensions) && $column->dimensions !== ''
-            ? "VECTOR({$column->dimensions})"
-            : 'VECTOR';
+        if (! isset($column->dimensions) || $column->dimensions === '') {
+            throw new RuntimeException('MariaDB requires the vector dimensions to be specified.');
+        }
+
+        return "VECTOR({$column->dimensions})";
     }
 
     /**

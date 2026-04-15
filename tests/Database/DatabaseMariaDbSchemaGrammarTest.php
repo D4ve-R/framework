@@ -428,14 +428,14 @@ class DatabaseMariaDbSchemaGrammarTest extends TestCase
         $this->assertSame('alter table `embeddings` add `embedding` VECTOR(384) not null', $statements[0]);
     }
 
-    public function testAddingVectorWithoutDimensions()
+    public function testAddingVectorWithoutDimensionsThrowsException()
     {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('MariaDB requires the vector dimensions to be specified.');
+
         $blueprint = new Blueprint($this->getConnection(), 'embeddings');
         $blueprint->vector('embedding');
-        $statements = $blueprint->toSql();
-
-        $this->assertCount(1, $statements);
-        $this->assertSame('alter table `embeddings` add `embedding` VECTOR not null', $statements[0]);
+        $blueprint->toSql();
     }
 
     public function testAddingVectorIndex()
